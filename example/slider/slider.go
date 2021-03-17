@@ -6,12 +6,10 @@ import (
 	"os"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget/material"
 
 	xw "github.com/yarcat/gioui/widget"
 )
@@ -28,11 +26,9 @@ func main() {
 }
 
 func loop(w *app.Window) error {
-	th := material.NewTheme(gofont.Collection())
 	var ops op.Ops
 
 	slider := xw.SliderStyle{
-		Shaper:      th.Shaper,
 		ThumbRadius: unit.Dp(12),
 		TrackWidth:  unit.Dp(5),
 		InColor:     color.NRGBA{R: 0xff, A: 0xff},
@@ -49,6 +45,9 @@ func loop(w *app.Window) error {
 		case system.FrameEvent:
 			gtx := layout.NewContext(&ops, e)
 			layout.W.Layout(gtx, slider.Layout)
+			if slider.Range.Changed() {
+				log.Println(slider.Range.Min, slider.Range.Max)
+			}
 			e.Frame(gtx.Ops)
 		}
 	}

@@ -2,7 +2,6 @@ package widget
 
 import (
 	"image"
-	"log"
 
 	"gioui.org/gesture"
 	"gioui.org/io/pointer"
@@ -17,6 +16,8 @@ type Range struct {
 	drag   gesture.Drag
 	action rangeAction
 	pos    float32
+
+	changed bool
 }
 
 type rangeAction uint8
@@ -41,27 +42,37 @@ func (f *Range) updateFromEvent(de *pointer.Event, thumbRadius int, length float
 		d := float32(thumbRadius) / length
 		if pos < f.Min+d {
 			f.action = rangeActionDraggingMin
-			log.Println("left")
 		} else if pos > f.Max-d {
 			f.action = rangeActionDraggingMax
-			log.Println("right")
 		} else {
 			f.action = rangeActionDraggingBoth
 			f.pos = pos
-			log.Println("mid")
 		}
 	}
 	switch f.action {
 	case rangeActionDraggingMin:
-		f.Min = pos
+		f.setRange(pos, f.Max)
 	case rangeActionDraggingMax:
-		f.Max = pos
+		f.setRange(f.Min, pos)
 	case rangeActionDraggingBoth:
 		dpos := pos - f.pos
-		f.Min += dpos
-		f.Max += dpos
+		f.setRange(f.Min+dpos, f.Max+dpos)
 		f.pos = pos
 	}
+}
+
+func (f *Range) setRange(min, max float32) {
+	if min != f.Min || max != f.Max {
+		f.Min, f.Max = min, max
+		f.changed = true
+	}
+}
+
+// Changed returns whether any of min/max values were changed since the last
+// method invocation.
+func (f *Range) Changed() (changed bool) {
+	changed, f.changed = f.changed, false
+	return
 }
 
 // Layout updates the range accordingly to gestures.
@@ -79,7 +90,6 @@ func (f *Range) Layout(gtx layout.Context, thumbRadius int, min, max float32) la
 	f.updateFromEvent(de, thumbRadius, length)
 
 	defer op.Save(gtx.Ops).Load()
-	log.Println(size)
 	pointer.Rect(image.Rectangle{Max: size}).Add(gtx.Ops)
 	f.drag.Add(gtx.Ops)
 

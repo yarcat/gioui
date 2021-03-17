@@ -3,7 +3,6 @@ package widget
 import (
 	"image"
 	"image/color"
-	"log"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -40,7 +39,6 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	ss.Range.Layout(gtx, thumbRadius, ss.Min, ss.Max)
 
 	v1, v2 := ss.Range.Min, ss.Range.Max
-	log.Println(v1, v2)
 
 	tr := trackRect(thumbRadius, tw, gtx.Constraints.Max.X)
 
@@ -54,6 +52,7 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	drawThumb(gtx.Ops, ss.InColor, tr, float32(thumbRadius), v1)
 	// Draw the second thumb.
 	drawThumb(gtx.Ops, ss.InColor, tr, float32(thumbRadius), v2)
+
 	return layout.Dimensions{Size: image.Pt(thumbRadius*2, thumbRadius*2)}
 }
 
