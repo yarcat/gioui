@@ -11,7 +11,6 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	xw "github.com/yarcat/gioui/widget"
@@ -40,12 +39,8 @@ func loop(w *app.Window) error {
 		OutColor:    color.NRGBA{R: 0xff, A: 0x7f},
 		Min:         0,
 		Max:         1,
+		Range:       &xw.Range{Min: 0.5, Max: 0.75},
 	}
-	slider.Float.Min = new(widget.Float)
-	slider.Float.Max = new(widget.Float)
-
-	slider.Float.Min.Value = 0.25
-	slider.Float.Max.Value = 0.75
 
 	for e := range w.Events() {
 		switch e := e.(type) {

@@ -12,7 +12,6 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"gioui.org/widget"
 )
 
 // SliderStyle is a multi-slider widget.
@@ -29,10 +28,7 @@ type SliderStyle struct {
 
 	Min, Max float32
 
-	Float struct {
-		Min *widget.Float
-		Max *widget.Float
-	}
+	Range *Range
 }
 
 func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
@@ -40,18 +36,10 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	tw := gtx.Px(ss.TrackWidth)
 
-	// size := image.Pt(gtx.Constraints.Max.X, r*2)
+	gtx.Constraints.Min = gtx.Constraints.Max
+	ss.Range.Layout(gtx, thumbRadius, ss.Min, ss.Max)
 
-	fs := sliderStyle{
-		Min:      ss.Min,
-		Max:      ss.Max,
-		MidValue: (ss.Float.Min.Value + ss.Float.Max.Value) / 2,
-		Radius:   thumbRadius,
-	}
-	fs.Layout(gtx, ss.Float.Min)
-	fs.Layout(gtx, ss.Float.Max)
-
-	v1, v2 := ss.Float.Min.Value, ss.Float.Max.Value
+	v1, v2 := ss.Range.Min, ss.Range.Max
 	log.Println(v1, v2)
 
 	tr := trackRect(thumbRadius, tw, gtx.Constraints.Max.X)
@@ -95,31 +83,4 @@ func drawThumb(ops *op.Ops, c color.NRGBA, tr image.Rectangle, rad, a float32) {
 			Radius: rad,
 		}.Op(ops))
 
-}
-
-type sliderStyle struct {
-	Min, Max float32
-	MidValue float32
-	Radius   int
-}
-
-func (ss sliderStyle) Layout(gtx layout.Context, f *widget.Float) {
-	st := op.Save(gtx.Ops)
-	mid := float32(gtx.Constraints.Max.X) * ss.MidValue
-	gtx.Constraints.Min.Y = ss.Radius
-	var min, max float32
-	if f.Value >= ss.MidValue {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X - int(mid)
-		op.Offset(f32.Pt(mid, 0)).Add(gtx.Ops)
-		paint.FillShape(gtx.Ops, color.NRGBA{G: 0xff, A: 0xff},
-			clip.Rect{Max: image.Pt(gtx.Constraints.Max.X, 20)}.Op())
-		min, max = ss.MidValue, ss.Max
-	} else {
-		gtx.Constraints.Min.X = int(mid)
-		paint.FillShape(gtx.Ops, color.NRGBA{B: 0xff, A: 0xff},
-			clip.Rect{Max: image.Pt(gtx.Constraints.Max.X, 20)}.Op())
-		min, max = 0, ss.MidValue
-	}
-	f.Layout(gtx, ss.Radius, min, max)
-	st.Load()
 }
