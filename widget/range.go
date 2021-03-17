@@ -14,7 +14,54 @@ import (
 type Range struct {
 	Min, Max float32
 
-	drag gesture.Drag
+	drag   gesture.Drag
+	action rangeAction
+	pos    float32
+}
+
+type rangeAction uint8
+
+const (
+	rangeActionNone rangeAction = iota
+	rangeActionDraggingMin
+	rangeActionDraggingMax
+	rangeActionDraggingBoth
+)
+
+func (f *Range) updateFromEvent(de *pointer.Event, thumbRadius int, length float32) {
+	if de == nil {
+		if !f.drag.Dragging() {
+			f.action = rangeActionNone
+			f.pos = 0
+		}
+		return
+	}
+	pos := de.Position.X / length
+	if f.action == rangeActionNone {
+		d := float32(thumbRadius) / length
+		if pos < f.Min+d {
+			f.action = rangeActionDraggingMin
+			log.Println("left")
+		} else if pos > f.Max-d {
+			f.action = rangeActionDraggingMax
+			log.Println("right")
+		} else {
+			f.action = rangeActionDraggingBoth
+			f.pos = pos
+			log.Println("mid")
+		}
+	}
+	switch f.action {
+	case rangeActionDraggingMin:
+		f.Min = pos
+	case rangeActionDraggingMax:
+		f.Max = pos
+	case rangeActionDraggingBoth:
+		dpos := pos - f.pos
+		f.Min += dpos
+		f.Max += dpos
+		f.pos = pos
+	}
 }
 
 // Layout updates the range accordingly to gestures.
@@ -29,14 +76,7 @@ func (f *Range) Layout(gtx layout.Context, thumbRadius int, min, max float32) la
 		}
 	}
 
-	if de != nil {
-		pos := de.Position.X / length
-		if pos < f.Min {
-			f.Min = pos
-		} else if pos > f.Max {
-			f.Max = pos
-		}
-	}
+	f.updateFromEvent(de, thumbRadius, length)
 
 	defer op.Save(gtx.Ops).Load()
 	log.Println(size)
