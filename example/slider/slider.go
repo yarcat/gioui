@@ -33,9 +33,9 @@ func loop(w *app.Window) error {
 		TrackWidth:  unit.Dp(5),
 		InColor:     color.NRGBA{R: 0xff, A: 0xff},
 		OutColor:    color.NRGBA{R: 0xff, A: 0x7f},
-		Min:         0,
-		Max:         1,
-		Range:       &xw.Range{Min: 0.5, Max: 0.75},
+		Min:         -1,
+		Max:         2,
+		Range:       &xw.Range{Min: 1.5, Max: 1.75},
 	}
 
 	for e := range w.Events() {

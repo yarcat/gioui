@@ -38,7 +38,9 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	ss.Range.Layout(gtx, thumbRadius, ss.Min, ss.Max)
 
-	v1, v2 := ss.Range.Min, ss.Range.Max
+	// Both values are now always in [0..1] range.
+	v1 := (ss.Range.Min - ss.Min) / (ss.Max - ss.Min)
+	v2 := (ss.Range.Max - ss.Min) / (ss.Max - ss.Min)
 
 	tr := trackRect(thumbRadius, tw, gtx.Constraints.Max.X)
 

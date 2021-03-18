@@ -31,15 +31,15 @@ const (
 
 func (f *Range) updateFromEvent(
 	evt *pointer.Event, thumbRadius int, length float32,
-) (min, max float32, change bool) {
+	min, max float32,
+) {
 	if evt == nil {
 		if !f.drag.Dragging() {
 			f.action = rangeActionNone
-			f.pos = 0
 		}
 		return
 	}
-	pos := evt.Position.X / length
+	pos := (evt.Position.X/length)*(max-min) + min
 	if f.action == rangeActionNone {
 		d := float32(thumbRadius) / length
 		if pos < f.Min+d {
@@ -53,26 +53,31 @@ func (f *Range) updateFromEvent(
 	}
 	switch f.action {
 	case rangeActionDraggingMin:
-		return pos, f.Max, true
+		f.setRange(pos, f.Max, min, max)
 	case rangeActionDraggingMax:
-		return f.Min, pos, true
+		f.setRange(f.Min, pos, min, max)
 	case rangeActionDraggingBoth:
 		dpos := pos - f.pos
 		f.pos = pos
-		return f.Min + dpos, f.Max + dpos, true
+		f.setRange(f.Min+dpos, f.Max+dpos, min, max)
 	}
-	panic("unknown range action")
 }
 
-func (f *Range) setRange(min, max float32) {
-	if min > f.Max {
-		min = f.Max
+func (f *Range) setRange(valMin, valMax, rangeMin, rangeMax float32) {
+	if valMin < rangeMin {
+		valMin = rangeMin
 	}
-	if max < f.Min {
-		max = f.Min
+	if valMin > f.Max {
+		valMin = f.Max
 	}
-	if min != f.Min || max != f.Max {
-		f.Min, f.Max = min, max
+	if valMax > rangeMax {
+		valMax = rangeMax
+	}
+	if valMax < f.Min {
+		valMax = f.Min
+	}
+	if valMin != f.Min || valMax != f.Max {
+		f.Min, f.Max = valMin, valMax
 		f.changed = true
 	}
 }
@@ -96,16 +101,7 @@ func (f *Range) Layout(gtx layout.Context, thumbRadius int, min, max float32) la
 		}
 	}
 
-	mn, mx, change := f.updateFromEvent(de, thumbRadius, length)
-	if change {
-		if mn < min {
-			mn = min
-		}
-		if mx > max {
-			mx = max
-		}
-		f.setRange(mn, mx)
-	}
+	f.updateFromEvent(de, thumbRadius, length, min, max)
 
 	defer op.Save(gtx.Ops).Load()
 	pointer.Rect(image.Rectangle{Max: size}).Add(gtx.Ops)
