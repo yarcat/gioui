@@ -42,16 +42,15 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	defer op.Save(gtx.Ops).Load()
 	clip.Rect(br).Add(gtx.Ops)
-	op.Offset(f32.Pt(float32(thumbRadius), 0)).Add(gtx.Ops)
 
-	gtx.Constraints.Min = image.Pt(width-2*thumbRadius, br.Dy())
-	ss.Range.Layout(gtx, thumbRadius, ss.Min, ss.Max)
+	gtx.Constraints.Min = image.Pt(width, br.Dy())
+	ss.Range.Layout(gtx, thumbRadius, fingerSize, ss.Min, ss.Max)
 
 	// Both values are now always in [0..1] range.
 	v1 := (ss.Range.Min - ss.Min) / (ss.Max - ss.Min)
 	v2 := (ss.Range.Max - ss.Min) / (ss.Max - ss.Min)
 
-	op.Offset(f32.Pt(0, float32(height)/2)).Add(gtx.Ops)
+	op.Offset(f32.Pt(float32(thumbRadius), float32(height)/2)).Add(gtx.Ops)
 
 	tr := image.Rect(0, -trackWidth/2, width-2*thumbRadius, trackWidth/2)
 	// Draw track before the first thumb.

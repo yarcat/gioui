@@ -2,6 +2,7 @@ package widget
 
 import (
 	"image"
+	"log"
 
 	"gioui.org/gesture"
 	"gioui.org/io/pointer"
@@ -30,7 +31,7 @@ const (
 )
 
 func (f *Range) updateFromEvent(
-	evt *pointer.Event, thumbRadius int, length float32,
+	evt *pointer.Event, thumbRadius, fingerSize int, length float32,
 	min, max float32,
 ) {
 	if evt == nil {
@@ -39,9 +40,11 @@ func (f *Range) updateFromEvent(
 		}
 		return
 	}
-	pos := (evt.Position.X/length)*(max-min) + min
+	pos := (evt.Position.X-float32(thumbRadius))/length*(max-min) + min
 	if f.action == rangeActionNone {
-		d := float32(thumbRadius) / length
+		d := float32(fingerSize) / length
+		log.Println(thumbRadius, fingerSize)
+		log.Println(pos, f.Min, d, float32(thumbRadius)/length)
 		if pos < f.Min+d {
 			f.action = rangeActionDraggingMin
 		} else if pos > f.Max-d {
@@ -90,9 +93,9 @@ func (f *Range) Changed() (changed bool) {
 }
 
 // Layout updates the range accordingly to gestures.
-func (f *Range) Layout(gtx layout.Context, thumbRadius int, min, max float32) layout.Dimensions {
+func (f *Range) Layout(gtx layout.Context, thumbRadius, fingerSize int, min, max float32) layout.Dimensions {
 	size := gtx.Constraints.Min
-	length := float32(size.X)
+	length := float32(size.X - 2*thumbRadius)
 
 	var de *pointer.Event
 	for _, e := range f.drag.Events(gtx.Metric, gtx, gesture.Horizontal) {
@@ -101,7 +104,7 @@ func (f *Range) Layout(gtx layout.Context, thumbRadius int, min, max float32) la
 		}
 	}
 
-	f.updateFromEvent(de, thumbRadius, length, min, max)
+	f.updateFromEvent(de, thumbRadius, fingerSize, length, min, max)
 
 	defer op.Save(gtx.Ops).Load()
 	pointer.Rect(image.Rectangle{Max: size}).Add(gtx.Ops)
