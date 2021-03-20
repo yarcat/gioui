@@ -33,22 +33,27 @@ type SliderStyle struct {
 func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	thumbRadius := gtx.Px(ss.ThumbRadius)
 	trackWidth := gtx.Px(ss.TrackWidth)
+	fingerSize := gtx.Px(ss.FingerSize)
 
 	width := gtx.Constraints.Max.X
-	br := boundingRect(thumbRadius, trackWidth, width)
+	height := max(thumbRadius*2, max(trackWidth, fingerSize*2))
+	size := image.Pt(width, height)
+	br := image.Rectangle{Max: size}
+
 	defer op.Save(gtx.Ops).Load()
 	clip.Rect(br).Add(gtx.Ops)
-	paint.Fill(gtx.Ops, color.NRGBA{G: 0xff, A: 0x55})
+	op.Offset(f32.Pt(float32(thumbRadius), 0)).Add(gtx.Ops)
 
-	gtx.Constraints.Min = image.Pt(width, br.Dy())
+	gtx.Constraints.Min = image.Pt(width-2*thumbRadius, br.Dy())
 	ss.Range.Layout(gtx, thumbRadius, ss.Min, ss.Max)
 
 	// Both values are now always in [0..1] range.
 	v1 := (ss.Range.Min - ss.Min) / (ss.Max - ss.Min)
 	v2 := (ss.Range.Max - ss.Min) / (ss.Max - ss.Min)
 
-	tr := trackRect(thumbRadius, trackWidth, gtx.Constraints.Max.X)
+	op.Offset(f32.Pt(0, float32(height)/2)).Add(gtx.Ops)
 
+	tr := image.Rect(0, -trackWidth/2, width-2*thumbRadius, trackWidth/2)
 	// Draw track before the first thumb.
 	drawTrack(gtx.Ops, ss.OutColor, tr, 0, v1)
 	// Draw track before the second thumb.
@@ -60,27 +65,14 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	// Draw the second thumb.
 	drawThumb(gtx.Ops, ss.InColor, tr, float32(thumbRadius), v2)
 
-	return layout.Dimensions{Size: image.Pt(thumbRadius*2, thumbRadius*2)}
+	return layout.Dimensions{Size: size}
 }
 
-func boundingRect(thumbRadius, trackWidth, width int) image.Rectangle {
-	var h int
-	if thumbRadius > trackWidth {
-		h = thumbRadius * 2
-	} else {
-		h = trackWidth * 2
+func max(a, b int) int {
+	if a > b {
+		return a
 	}
-	return image.Rect(0, 0, width, h)
-}
-
-func trackRect(rad, width, maxx int) image.Rectangle {
-	var mid int
-	if rad*2 > width {
-		mid = rad
-	} else {
-		mid = width / 2
-	}
-	return image.Rect(0, mid-width/2, maxx, mid+width/2)
+	return b
 }
 
 // drawTrack draws track segment betwee a and b. Both a and b values are

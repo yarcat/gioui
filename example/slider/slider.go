@@ -31,6 +31,7 @@ func loop(w *app.Window) error {
 	slider := xw.SliderStyle{
 		ThumbRadius: unit.Dp(12),
 		TrackWidth:  unit.Dp(5),
+		FingerSize:  unit.Dp(20),
 		InColor:     color.NRGBA{R: 0xff, A: 0xff},
 		OutColor:    color.NRGBA{R: 0xff, A: 0x7f},
 		Min:         -1,
