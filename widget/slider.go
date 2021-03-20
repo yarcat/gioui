@@ -32,17 +32,22 @@ type SliderStyle struct {
 
 func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	thumbRadius := gtx.Px(ss.ThumbRadius)
+	trackWidth := gtx.Px(ss.TrackWidth)
 
-	tw := gtx.Px(ss.TrackWidth)
+	width := gtx.Constraints.Max.X
+	br := boundingRect(thumbRadius, trackWidth, width)
+	defer op.Save(gtx.Ops).Load()
+	clip.Rect(br).Add(gtx.Ops)
+	paint.Fill(gtx.Ops, color.NRGBA{G: 0xff, A: 0x55})
 
-	gtx.Constraints.Min = gtx.Constraints.Max
+	gtx.Constraints.Min = image.Pt(width, br.Dy())
 	ss.Range.Layout(gtx, thumbRadius, ss.Min, ss.Max)
 
 	// Both values are now always in [0..1] range.
 	v1 := (ss.Range.Min - ss.Min) / (ss.Max - ss.Min)
 	v2 := (ss.Range.Max - ss.Min) / (ss.Max - ss.Min)
 
-	tr := trackRect(thumbRadius, tw, gtx.Constraints.Max.X)
+	tr := trackRect(thumbRadius, trackWidth, gtx.Constraints.Max.X)
 
 	// Draw track before the first thumb.
 	drawTrack(gtx.Ops, ss.OutColor, tr, 0, v1)
@@ -56,6 +61,16 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	drawThumb(gtx.Ops, ss.InColor, tr, float32(thumbRadius), v2)
 
 	return layout.Dimensions{Size: image.Pt(thumbRadius*2, thumbRadius*2)}
+}
+
+func boundingRect(thumbRadius, trackWidth, width int) image.Rectangle {
+	var h int
+	if thumbRadius > trackWidth {
+		h = thumbRadius * 2
+	} else {
+		h = trackWidth * 2
+	}
+	return image.Rect(0, 0, width, h)
 }
 
 func trackRect(rad, width, maxx int) image.Rectangle {
