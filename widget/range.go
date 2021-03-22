@@ -42,6 +42,7 @@ func (r *Range) updateFromEvent(
 	}
 	pos := (evt.Position.X-float32(thumbRadius))/length*(max-min) + min
 	if r.action == rangeActionNone {
+		fingerSize := float32(fingerSize) / length * (max - min)
 		r.setAction(fingerSize, length, pos)
 	}
 	switch r.action {
@@ -55,18 +56,17 @@ func (r *Range) updateFromEvent(
 	}
 }
 
-func (r *Range) setAction(fingerSize int, length, pos float32) {
-	d := float32(fingerSize) / length
-	if pos < r.Values[0]+d {
+func (r *Range) setAction(fingerSize, length, pos float32) {
+	if pos < r.Values[0]+fingerSize {
 		r.dragIndex, r.action = 0, rangeActionDragging
 		return
 	}
-	if pos > r.Values[len(r.Values)-1]-d {
+	if pos > r.Values[len(r.Values)-1]-fingerSize {
 		r.dragIndex, r.action = len(r.Values)-1, rangeActionDragging
 		return
 	}
 	for i, v := range r.Values {
-		if v-d < pos && pos < v+d {
+		if v-fingerSize < pos && pos < v+fingerSize {
 			r.dragIndex, r.action = i, rangeActionDragging
 			return
 		}

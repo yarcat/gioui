@@ -63,7 +63,7 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	for i, v := range ss.Range.Values {
 		v = (v - ss.Min) / (ss.Max - ss.Min)
-		drawThumb(gtx.Ops, ss.ThumbColor(i), tr, float32(thumbRadius), v)
+		drawThumb(gtx.Ops, ss.ThumbColor(i), tr, float32(fingerSize), float32(thumbRadius), v)
 	}
 
 	return layout.Dimensions{Size: size}
@@ -85,11 +85,21 @@ func drawTrack(ops *op.Ops, c color.NRGBA, tr image.Rectangle, a, b float32) {
 	}.Op())
 }
 
-func drawThumb(ops *op.Ops, c color.NRGBA, tr image.Rectangle, rad, a float32) {
+func drawThumb(ops *op.Ops, c color.NRGBA, tr image.Rectangle, finger, rad, a float32) {
+	center := f32.Pt(float32(tr.Dx())*a, float32(tr.Min.Y+tr.Dy()/2))
+
+	if finger > rad {
+		c := c
+		c.A /= 2
+		paint.FillShape(ops, c,
+			clip.Circle{
+				Center: center,
+				Radius: finger,
+			}.Op(ops))
+	}
 	paint.FillShape(ops, c,
 		clip.Circle{
-			Center: f32.Pt(float32(tr.Dx())*a, float32(tr.Min.Y+tr.Dy()/2)),
+			Center: center,
 			Radius: rad,
 		}.Op(ops))
-
 }
