@@ -12,7 +12,9 @@ import (
 
 // Range is for selecting a range.
 type Range struct {
-	Min, Max float32
+	Values []float32
+
+	dragIndex int
 
 	drag   gesture.Drag
 	action rangeAction
@@ -25,8 +27,7 @@ type rangeAction uint8
 
 const (
 	rangeActionNone rangeAction = iota
-	rangeActionDraggingMin
-	rangeActionDraggingMax
+	rangeActionDragging
 	rangeActionDraggingBoth
 )
 
@@ -43,45 +44,52 @@ func (f *Range) updateFromEvent(
 	pos := (evt.Position.X-float32(thumbRadius))/length*(max-min) + min
 	if f.action == rangeActionNone {
 		d := float32(fingerSize) / length
-		log.Println(thumbRadius, fingerSize)
-		log.Println(pos, f.Min, d, float32(thumbRadius)/length)
-		if pos < f.Min+d {
-			f.action = rangeActionDraggingMin
-		} else if pos > f.Max-d {
-			f.action = rangeActionDraggingMax
-		} else {
-			f.action = rangeActionDraggingBoth
-			f.pos = pos
+
+		for i, v := range []float32{} {
+			if v-d < pos && pos < v+d || i == 0 {
+				log.Println("dragging", i)
+				f.action = rangeActionDragging
+				f.dragIndex = i
+				break
+			} else if pos < d {
+				f.action = rangeActionDraggingBoth
+				f.dragIndex = i
+				f.pos = pos
+				break
+			}
 		}
 	}
 	switch f.action {
-	case rangeActionDraggingMin:
-		f.setRange(pos, f.Max, min, max)
-	case rangeActionDraggingMax:
-		f.setRange(f.Min, pos, min, max)
+	case rangeActionDragging:
+		f.setRange(f.dragIndex, pos, min, max)
 	case rangeActionDraggingBoth:
-		dpos := pos - f.pos
-		f.pos = pos
-		f.setRange(f.Min+dpos, f.Max+dpos, min, max)
+		// dpos := pos - f.pos
+		// f.pos = pos
+		// f.setRange(f.dragIndex, min, max)
 	}
 }
 
-func (f *Range) setRange(valMin, valMax, rangeMin, rangeMax float32) {
-	if valMin < rangeMin {
-		valMin = rangeMin
+func (r *Range) setRange(index int, v, rangeMin, rangeMax float32) {
+	switch index {
+	case 0:
+		if v < rangeMin {
+			v = rangeMin
+		}
+	case len(r.Values) - 1:
+		if v > rangeMax {
+			v = rangeMax
+		}
+	default:
+		if v < r.Values[index-1] {
+			v = r.Values[index-1]
+		}
+		if v > r.Values[index+1] {
+			v = r.Values[index+1]
+		}
 	}
-	if valMin > f.Max {
-		valMin = f.Max
-	}
-	if valMax > rangeMax {
-		valMax = rangeMax
-	}
-	if valMax < f.Min {
-		valMax = f.Min
-	}
-	if valMin != f.Min || valMax != f.Max {
-		f.Min, f.Max = valMin, valMax
-		f.changed = true
+	if v != r.Values[index] {
+		r.Values[index] = v
+		r.changed = true
 	}
 }
 

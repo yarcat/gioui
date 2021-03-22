@@ -22,8 +22,8 @@ type SliderStyle struct {
 	TrackWidth  unit.Value
 	FingerSize  unit.Value
 
-	InColor  color.NRGBA
-	OutColor color.NRGBA
+	TrackColor func(int) color.NRGBA
+	ThumbColor func(int) color.NRGBA
 
 	Min, Max float32
 
@@ -46,23 +46,27 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	gtx.Constraints.Min = image.Pt(width, br.Dy())
 	ss.Range.Layout(gtx, thumbRadius, fingerSize, ss.Min, ss.Max)
 
-	// Both values are now always in [0..1] range.
-	v1 := (ss.Range.Min - ss.Min) / (ss.Max - ss.Min)
-	v2 := (ss.Range.Max - ss.Min) / (ss.Max - ss.Min)
-
 	op.Offset(f32.Pt(float32(thumbRadius), float32(height)/2)).Add(gtx.Ops)
 
 	tr := image.Rect(0, -trackWidth/2, width-2*thumbRadius, trackWidth/2)
-	// Draw track before the first thumb.
-	drawTrack(gtx.Ops, ss.OutColor, tr, 0, v1)
-	// Draw track before the second thumb.
-	drawTrack(gtx.Ops, ss.InColor, tr, v1, v2)
-	// Draw track after the second thumb.
-	drawTrack(gtx.Ops, ss.OutColor, tr, v2, 1)
-	// Draw the first thumb.
-	drawThumb(gtx.Ops, ss.InColor, tr, float32(thumbRadius), v1)
-	// Draw the second thumb.
-	drawThumb(gtx.Ops, ss.InColor, tr, float32(thumbRadius), v2)
+	var prevV float32
+	for i, v := range ss.Range.Values {
+		v = (v - ss.Min) / (ss.Max - ss.Min)
+		if v != prevV {
+			// Draw track before the first thumb.
+			drawTrack(gtx.Ops, ss.TrackColor(i), tr, prevV, v)
+		}
+		prevV = v
+	}
+	if prevV != 1 {
+		drawTrack(gtx.Ops, ss.TrackColor(len(ss.Range.Values)), tr, prevV, 1)
+	}
+
+	for i, v := range ss.Range.Values {
+		v = (v - ss.Min) / (ss.Max - ss.Min)
+		// Draw the first thumb.
+		drawThumb(gtx.Ops, ss.ThumbColor(i), tr, float32(thumbRadius), v)
+	}
 
 	return layout.Dimensions{Size: size}
 }
