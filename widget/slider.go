@@ -53,7 +53,6 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 	for i, v := range ss.Range.Values {
 		v = (v - ss.Min) / (ss.Max - ss.Min)
 		if v != prevV {
-			// Draw track before the first thumb.
 			drawTrack(gtx.Ops, ss.TrackColor(i), tr, prevV, v)
 		}
 		prevV = v
@@ -64,7 +63,6 @@ func (ss SliderStyle) Layout(gtx layout.Context) layout.Dimensions {
 
 	for i, v := range ss.Range.Values {
 		v = (v - ss.Min) / (ss.Max - ss.Min)
-		// Draw the first thumb.
 		drawThumb(gtx.Ops, ss.ThumbColor(i), tr, float32(thumbRadius), v)
 	}
 

@@ -2,7 +2,6 @@ package widget
 
 import (
 	"image"
-	"log"
 
 	"gioui.org/gesture"
 	"gioui.org/io/pointer"
@@ -31,61 +30,71 @@ const (
 	rangeActionDraggingBoth
 )
 
-func (f *Range) updateFromEvent(
+func (r *Range) updateFromEvent(
 	evt *pointer.Event, thumbRadius, fingerSize int, length float32,
 	min, max float32,
 ) {
 	if evt == nil {
-		if !f.drag.Dragging() {
-			f.action = rangeActionNone
+		if !r.drag.Dragging() {
+			r.action = rangeActionNone
 		}
 		return
 	}
 	pos := (evt.Position.X-float32(thumbRadius))/length*(max-min) + min
-	if f.action == rangeActionNone {
-		d := float32(fingerSize) / length
-
-		for i, v := range []float32{} {
-			if v-d < pos && pos < v+d || i == 0 {
-				log.Println("dragging", i)
-				f.action = rangeActionDragging
-				f.dragIndex = i
-				break
-			} else if pos < d {
-				f.action = rangeActionDraggingBoth
-				f.dragIndex = i
-				f.pos = pos
-				break
-			}
-		}
+	if r.action == rangeActionNone {
+		r.setAction(fingerSize, length, pos)
 	}
-	switch f.action {
+	switch r.action {
 	case rangeActionDragging:
-		f.setRange(f.dragIndex, pos, min, max)
+		r.setRange(r.dragIndex, pos, min, max)
 	case rangeActionDraggingBoth:
-		// dpos := pos - f.pos
-		// f.pos = pos
-		// f.setRange(f.dragIndex, min, max)
+		dpos := pos - r.pos
+		r.pos = pos
+		r.setRange(r.dragIndex-1, r.Values[r.dragIndex-1]+dpos, min, max)
+		r.setRange(r.dragIndex, r.Values[r.dragIndex]+dpos, min, max)
+	}
+}
+
+func (r *Range) setAction(fingerSize int, length, pos float32) {
+	d := float32(fingerSize) / length
+	if pos < r.Values[0]+d {
+		r.dragIndex, r.action = 0, rangeActionDragging
+		return
+	}
+	if pos > r.Values[len(r.Values)-1]-d {
+		r.dragIndex, r.action = len(r.Values)-1, rangeActionDragging
+		return
+	}
+	for i, v := range r.Values {
+		if v-d < pos && pos < v+d {
+			r.dragIndex, r.action = i, rangeActionDragging
+			return
+		}
+		if pos < v {
+			r.dragIndex, r.action = i, rangeActionDraggingBoth
+			r.pos = pos
+			return
+		}
 	}
 }
 
 func (r *Range) setRange(index int, v, rangeMin, rangeMax float32) {
 	switch index {
 	case 0:
-		if v < rangeMin {
-			v = rangeMin
+		if len(r.Values) > 1 {
+			rangeMax = r.Values[1]
 		}
 	case len(r.Values) - 1:
-		if v > rangeMax {
-			v = rangeMax
-		}
+		rangeMin = r.Values[index-1]
 	default:
-		if v < r.Values[index-1] {
-			v = r.Values[index-1]
-		}
-		if v > r.Values[index+1] {
-			v = r.Values[index+1]
-		}
+		rangeMin = r.Values[index-1]
+		rangeMax = r.Values[index+1]
+	}
+	if v < rangeMin {
+		v = rangeMin
+	}
+	if v > rangeMax {
+		v = rangeMax
 	}
 	if v != r.Values[index] {
 		r.Values[index] = v
